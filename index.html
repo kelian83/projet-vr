@@ -34,6 +34,17 @@
       </a-entity>
       <a-plane position="0 0 -4" rotation="-90 0 0" width="50" height="50" color="#000847">
       </a-plane>
+      <!-- Plafond épais avec trou central (cadre) -->
+      <!-- Hypothèses: le sol est centré autour de z=-4 (décalage de la scène). On reproduit ce décalage pour aligner le plafond. -->
+      <!-- Paramètres du plafond: largeur totale ~50, ouverture centrale 8x8, épaisseur 1 -->
+      <a-entity id="plafond-cadre">
+        <!-- Barres Nord/Sud (longueur ~50, profondeur (épaisseur cadre) 21) -->
+        <a-box position="0 7 -15" depth="21" scale="1 2 1" height="1" width="50" color="#000847"></a-box>
+        <a-box position="0 7 15" depth="21" scale="1 2 1" height="1" width="50" color="#000847"></a-box>
+        <!-- Barres Ouest/Est (longueur ~8+2*21=50, mais on réalise des latérales de 16 de profondeur) -->
+        <a-box position="-15 7 0" rotation="0 90 0" scale="1 2 1" depth="21" height="1" width="9" color="#000847"></a-box>
+        <a-box position="15 7 0" scale="1 2 1" rotation="0 90 0" depth="21" height="1" width="9" color="#000847"></a-box>
+      </a-entity>
       <a-entity id="lampadaire" position="-4.08915 0 -5.77692" rotation="0 -45 0">
         <a-cylinder position="0 0.15 0" radius="0.12" height="0.3" color="#3a3a3a"></a-cylinder>
         <a-cylinder position="0 1.9 0" radius="0.05" height="3.8" color="#4a4a4a"></a-cylinder>
@@ -81,6 +92,36 @@
               e.setAttribute('position', {x, y: d.y, z});
               e.setAttribute('rotation', {x: 0, y: ry, z: 0});
               e.setAttribute('scale', {x: s, y: s, z: s});
+              // Animations : balancement doux (rotation Y) et léger flottement (position Y)
+              const swayAmp = 5 + Math.random() * 6; // amplitude +- en degrés (5 à 11)
+              const swayDur = 1800 + Math.floor(Math.random() * 1400); // 1800-3200ms
+              const swayDelay = Math.floor(Math.random() * 1000); // 0-1000ms
+              const yFrom = ry - swayAmp;
+              const yTo = ry + swayAmp;
+              e.setAttribute('animation__sway', {
+                property: 'rotation',
+                from: `0 ${yFrom} 0`,
+                to: `0 ${yTo} 0`,
+                dir: 'alternate',
+                loop: true,
+                easing: 'easeInOutSine',
+                dur: swayDur,
+                delay: swayDelay
+              });
+
+              const bobAmp = 0.06 + Math.random() * 0.08; // 0.06 à 0.14 unités
+              const bobDur = 1400 + Math.floor(Math.random() * 1400); // 1400-2800ms
+              const bobDelay = Math.floor(Math.random() * 1000); // 0-1000ms
+              e.setAttribute('animation__bob', {
+                property: 'position',
+                from: `${x} ${d.y - bobAmp} ${z}`,
+                to: `${x} ${d.y + bobAmp} ${z}`,
+                dir: 'alternate',
+                loop: true,
+                easing: 'easeInOutSine',
+                dur: bobDur,
+                delay: bobDelay
+              });
               this.el.appendChild(e);
             }
           }

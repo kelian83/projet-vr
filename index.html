@@ -7,7 +7,7 @@
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   </head>
   <body>
-    <a-scene fog="color: #10008a; density: 0.76; far: 8.3" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="">
+  <a-scene fog="color: #10008a; density: 0.76; far: 8.3" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="" mark-stairs-rotatable>
       <a-asset-item id="monModele" src="assets/Stairs Closed.glb"></a-asset-item>
       <a-asset-item id="monModele2" src="assets/Base.glb"></a-asset-item>
       <a-asset-item id="Herbes" src="assets/grass green.glb"></a-asset-item>
@@ -126,10 +126,68 @@
             }
           }
         });
+
+        // Marquer automatiquement les escaliers comme rotatables (ceux qui utilisent Stairs Closed.glb)
+        AFRAME.registerComponent('mark-stairs-rotatable', {
+          init: function () {
+            const mark = () => {
+              const stairs = this.el.querySelectorAll('a-entity[gltf-model*="Stairs Closed.glb"], [gltf-model*="Stairs Closed.glb"]');
+              stairs.forEach(el => el.classList.add('rotatable'));
+            };
+            if (this.el.hasLoaded) mark(); else this.el.addEventListener('loaded', mark);
+          }
+        });
+
+        // Composant contrôleur: maintenir la gâchette pour faire tourner la cible intersectée
+        AFRAME.registerComponent('controller-rotate', {
+          schema: { speed: { type: 'number', default: 45 } }, // degrés/sec
+          init: function () {
+            this.isHolding = false;
+            this.targetEl = null;
+            this._onDown = this.onDown.bind(this);
+            this._onUp = this.onUp.bind(this);
+            // Écouter trigger (et squeeze pour compatibilité)
+            this.el.addEventListener('triggerdown', this._onDown);
+            this.el.addEventListener('triggerup', this._onUp);
+            this.el.addEventListener('squeezestart', this._onDown);
+            this.el.addEventListener('squeezeend', this._onUp);
+          },
+          remove: function () {
+            this.el.removeEventListener('triggerdown', this._onDown);
+            this.el.removeEventListener('triggerup', this._onUp);
+            this.el.removeEventListener('squeezestart', this._onDown);
+            this.el.removeEventListener('squeezeend', this._onUp);
+          },
+          onDown: function () {
+            const rc = this.el.components.raycaster;
+            if (!rc) { this.isHolding = false; this.targetEl = null; return; }
+            const hits = rc.intersections || [];
+            if (hits.length > 0) {
+              const hitEl = hits[0].object && hits[0].object.el ? hits[0].object.el : hits[0].el;
+              // Remonter au parent si l'intersection cible un mesh interne
+              this.targetEl = hitEl && hitEl.classList && hitEl.classList.contains('rotatable') ? hitEl : (hitEl && hitEl.closest ? hitEl.closest('.rotatable') : null);
+              if (this.targetEl) this.isHolding = true;
+            }
+          },
+          onUp: function () {
+            this.isHolding = false;
+            this.targetEl = null;
+          },
+          tick: function (time, dt) {
+            if (!this.isHolding || !this.targetEl || !dt) return;
+            const rot = this.targetEl.getAttribute('rotation');
+            const step = (this.data.speed * dt) / 1000; // degrés
+            this.targetEl.setAttribute('rotation', { x: rot.x, y: rot.y + step, z: rot.z });
+          }
+        });
       </script>
       <a-entity scatter-grass="count: 32; width: 16; depth: 16; y: 0; minScale: 2.7; maxScale: 3.5"></a-entity>
-      <a-sky color="#ECECEC"></a-sky>
-      <a-camera position="0 1.6 0" rotation="-33.23155211758776 -319.93963280105135 0"> </a-camera>
+  <a-sky color="#ECECEC"></a-sky>
+  <a-camera position="0 1.6 0" rotation="-33.23155211758776 -319.93963280105135 0"> </a-camera>
+      
+  <!-- Contrôleurs VR avec laser et rotation au maintien de la gâchette -->
+  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .rotatable; far: 12" controller-rotate="speed: 45"></a-entity>
+  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .rotatable; far: 12" controller-rotate="speed: 45"></a-entity>
       <!-- <a-light type="ambient" color="#9fb2ff" intensity="0.6"></a-light>
       <a-light type="hemisphere" color="#cfd8ff" groundcolor="#0a0052" intensity="0.7"></a-light> -->
     </a-scene>

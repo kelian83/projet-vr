@@ -132,7 +132,11 @@
           init: function () {
             const mark = () => {
               const stairs = this.el.querySelectorAll('a-entity[gltf-model*="Stairs Closed.glb"], [gltf-model*="Stairs Closed.glb"]');
-              stairs.forEach(el => el.classList.add('rotatable'));
+              stairs.forEach(el => {
+                // Marque le conteneur parent (si disponible) pour faire pivoter tout le groupe
+                const parent = el.parentEl || el;
+                if (parent) parent.classList.add('rotatable');
+              });
             };
             if (this.el.hasLoaded) mark(); else this.el.addEventListener('loaded', mark);
           }
@@ -186,8 +190,8 @@
   <a-camera position="0 1.6 0" rotation="-33.23155211758776 -319.93963280105135 0"> </a-camera>
       
   <!-- Contrôleurs VR avec laser et rotation au maintien de la gâchette -->
-  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .rotatable; far: 12" controller-rotate="speed: 45"></a-entity>
-  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .rotatable; far: 12" controller-rotate="speed: 300"></a-entity>
+        <a-entity id="rightHand" laser-controls="hand: right" raycaster="far: 12" controller-rotate="speed: 45"></a-entity>
+        <a-entity id="leftHand" laser-controls="hand: left" raycaster="far: 12" controller-rotate="speed: 300"></a-entity>
       <!-- <a-light type="ambient" color="#9fb2ff" intensity="0.6"></a-light>
       <a-light type="hemisphere" color="#cfd8ff" groundcolor="#0a0052" intensity="0.7"></a-light> -->
     </a-scene>
